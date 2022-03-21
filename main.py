@@ -3,6 +3,7 @@ from PIL import Image
 from glob import glob, iglob
 import os, sys
 import numpy as np
+import pandas as pd
 
 from tensorflow import keras 
 from tensorflow.keras.models import Sequential, load_model
@@ -12,8 +13,13 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, Normalizer
 
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
 import tensorflow as tf
+
+import seaborn as sns
+sns.set_theme()
+import matplotlib.pyplot as plt
 
 normalize = Normalizer()
 
@@ -60,7 +66,7 @@ def image_generator():
         zoom_range=0.2,
         horizontal_flip=False)   
     
-    classes = load_classes()
+    classes = load_classes(path_train)
     
     for classe in classes:
         im_path = str(path_train + "/" + classe + '/*')
@@ -154,8 +160,8 @@ def test_cnn(X_test, y_test):
     y_pred = np.argmax(y_pred, axis=-1)
 
     y_test = y_test.reshape(-1)
-
-    print(confusion_matrix(y_test, y_pred))
+    
+    print_confusion_matrix(y_pred, y_pred)
 
     print(accuracy_score(y_test, y_pred) * 100)
 
@@ -182,11 +188,27 @@ def predict_cnn():
     print(model.predict(X_pred))
 
     pred = np.argmax(model.predict(X_pred), axis=-1)
+    
+    print_confusion_matrix(y_pred, pred)
 
-    print(confusion_matrix(y_pred, pred))
+    # print(accuracy_score(y_pred, pred) * 100)
 
-    print(accuracy_score(y_pred, pred) * 100)
 
+
+def print_confusion_matrix(y_true, y_pred, report=True):
+    labels = sorted(list(set(y_true)))
+    cmx_data = confusion_matrix(y_true, y_pred, labels=labels)
+    
+    df_cmx = pd.DataFrame(cmx_data, index=labels, columns=labels)
+ 
+    fig, ax = plt.subplots(figsize=(7, 6))
+    sns.heatmap(df_cmx, annot=True, fmt='g' ,square=False)
+    ax.set_ylim(len(set(y_true)), 0)
+    plt.show()
+    
+    if report:
+        print('Classification Report')
+        print(classification_report(y_test, y_pred))
 
 # image_generator()  
 
@@ -198,4 +220,4 @@ train_cnn(model, X_train, y_train)
 
 test_cnn(X_test, y_test)
 
-predict_cnn()
+# predict_cnn()
